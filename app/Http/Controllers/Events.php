@@ -189,5 +189,77 @@ class Events extends Controller
        
     }
 
+
+    function manageEventsList(Request $request){
+        
+        $search_text = '';
+        if(isset($request->search_event)){
+            $search_text = $request->search_event;
+          $list = Event::where('name', 'LIKE', '%'.$search_text.'%')->orWhere('slug', 'LIKE', '%'.$search_text.'%')->paginate(10) ;
+        }else{
+            $list = Event::paginate(10) ;
+        }
+
+        
+        return view('events_list',compact('list','search_text'));
+    }
+
+     function addEventForm(Request $request){
+
+        return view('event_add_edit');
+    }
+
+    function deleteEvent(Request $request){
+
+        $list = Event::where('id',$request->id)->get()->first();
+        $data = null;
+        $msg = 'Something Wrong';
+        if(isset($list)){
+            $data = $list->delete();
+            $msg = 'Deleted Successfully';
+            $type = 'success';
+        }else{
+            $msg = 'Data not found';
+            $type = 'error';
+            
+        }
+        return redirect()->back()->with('message_'.$type, $msg)->with('type', $type);
+       
+    }
+
+    function addEvent(Request $request){
+
+        $this->validate($request, [
+            'name' => 'required',
+            'slug' => 'required|unique:events,slug,'.$request->id,
+        ]);
+
+         $record = array(
+                    'name' => $this->inputStripTag($request->name),
+                    'slug' => $this->inputStripTag($request->slug),
+        );
+        $dataHas = Event::where('id',$request->id)->get()->first();
+        $type = 'error';
+        $msg = 'Something Wrong';
+        if($dataHas){
+            $update_obj = $dataHas->update($record);
+            $success_response = 1;
+            $data = $update_obj;
+            $msg = 'Updated Successfully';
+            $type = 'success';
+        }else{
+            $save_obj = Event::create($record);
+        
+            if($save_obj){
+                $success_response = 1;
+                $data = $save_obj;
+                $msg = 'Save Successfully';
+                $type = 'success';
+            }
+        }
+        return redirect()->back()->with('message_'.$type, $msg);
+
+    }
+
     
 }
